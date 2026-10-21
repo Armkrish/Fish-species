@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Thailand Fish Explorer</title> 
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#e9f9ff;
+  color:#123047;
+}
+header{
+  padding:45px 20px;
+  text-align:center;
+  color:white;
+  background:linear-gradient(135deg,#005b82,#00a6a6);
+}
+header h1{
+  font-size:2.7rem;
+  margin:0 0 8px;
+}
+header p{
+  max-width:800px;
+  margin:auto;
+  line-height:1.6;
+}
+nav{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:#063b50;
+  padding:12px;
+  text-align:center;
+}
+nav a{
+  color:white;
+  text-decoration:none;
+  margin:0 10px;
+  font-weight:bold;
+}
+main{
+  max-width:1200px;
+  margin:auto;
+  padding:28px 18px;
+}
+.panel,.card,.game{
+  background:white;
+  border-radius:18px;
+  box-shadow:0 5px 20px #0001;
+  padding:20px;
+  margin-bottom:25px;
+}
+.controls{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:15px 0;
+}
+input,select,button{
+  font:inherit;
+  border-radius:9px;
+  padding:10px 12px;
+  border:1px solid #b8d4df;
+}
+button{
+  background:#006994;
+  color:white;
+  border:0;
+  cursor:pointer;
+  font-weight:bold;
+}
+button:hover{
+  background:#004e6d;
+  transform:translateY(-1px);
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:18px;
+}
+.card{
+  border-top:5px solid #00a6a6;
+  transition:.2s;
+}
+.card:hover{
+  transform:translateY(-4px);
+}
+.card.predator{
+  border-top-color:#d85b3f;
+}
+.card.herbivore{
+  border-top-color:#55a83d;
+}
+.card.omnivore{
+  border-top-color:#d49a27;
+}
+.card.carnivore{
+  border-top-color:#8e4ab8;
+}
+.card h3{
+  margin:8px 0;
+  color:#064d68;
+  cursor:pointer;
+  text-decoration:underline;
+  text-decoration-style:dotted;
+}
+.card h3:hover{
+  color:#00a6a6;
+}
+.tag{
+  display:inline-block;
+  padding:4px 9px;
+  border-radius:20px;
+  background:#def7f5;
+  color:#06716c;
+  font-size:.8rem;
+  font-weight:bold;
+}
+.statusNative{
+  background:#dff5df;
+  color:#267326;
+}
+.statusIntroduced{
+  background:#ffe6d7;
+  color:#a44a16;
+}
+.selected{
+  outline:3px solid #00a6a6;
+}
+#detail{
+  min-height:100px;
+  background:#f4fbfd;
+  border-radius:12px;
+  padding:15px;
+  line-height:1.6;
+}
+#pond{
+  height:460px;
+  position:relative;
+  overflow:hidden;
+  border-radius:16px;
+  background: linear-gradient(#91dff0 0 30%,#167ca3 30% 100%);
+  box-shadow:inset 0 -20px 50px #063b5044;
+}
+#pond:before{
+  content:"";
+  position:absolute;
+  top:28%;
+  left:0;
+  right:0;
+  height:4px;
+  background:#ffffff55;
+  box-shadow: 0 25px #ffffff22, 0 50px #ffffff15;
+}
+#pond:after{
+  content:"";
+  position:absolute;
+  bottom:0;
+  left:0;
+  right:0;
+  height:75px;
+  background: linear-gradient(8deg,#176e39 10%,transparent 11% 89%,#176e39 90%);
+  pointer-events:none;
+}
+.entity{
+  position:absolute;
+  z-index:7;
+  font-size:55px;
+  transition: left .8s ease, top .8s ease, transform .3s;
+  filter:drop-shadow(0 3px 2px #0005);
+}
+.prey{
+  position:absolute;
+  z-index:6;
+  font-size:38px;
+  transition: left .7s ease, top .7s ease, opacity .4s;
+  cursor:pointer;
+}
+.food{
+  position:absolute;
+  z-index:5;
+  font-size:38px;
+  transition: left .7s ease, top .7s ease, opacity .4s;
+  cursor:pointer;
+}
+.plant{
+  position:absolute;
+  bottom:25px;
+  font-size:52px;
+  z-index:3;
+  animation:sway 2s infinite ease-in-out;
+}
+@keyframes sway{
+  0%,100%{transform:rotate(-3deg)}
+  50%{transform:rotate(3deg)}
+}
+.bubble{
+  position:absolute;
+  color:#fff9;
+  font-size:20px;
+  animation:rise 5s infinite linear;
+  z-index:2;
+}
+@keyframes rise{
+  from{
+    transform:translateY(30px);
+    opacity:0;
+  }
+  30%{opacity:1}
+  to{
+    transform:translateY(-200px);
+    opacity:0;
+  }
+}
+.attack{
+  animation:attack .55s ease-in-out;
+}
+@keyframes attack{
+  0%{transform:scaleX(1)}
+  35%{transform:scaleX(1.35) translateX(25px)}
+  60%{transform:scaleX(.9) translateX(-5px)}
+  100%{transform:scaleX(1)}
+}
+.eat{
+  animation:eat .7s ease-in-out;
+}
+@keyframes eat{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.3)}
+  70%{transform:scale(.9)}
+  100%{transform:scale(1)}
+}
+.status{
+  font-weight:bold;
+  min-height:30px;
+  margin-top:10px;
+  font-size:1.05rem;
+}
+.stats{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:15px;
+}
+.stat{
+  background:#eef9fc;
+  border-radius:12px;
+  padding:12px;
+  min-width:135px;
+}
+.energyBar{
+  width:100%;
+  height:16px;
+  background:#d8e8ed;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:8px;
+}
+#energyFill{
+  height:100%;
+  width:100%;
+  background:#46a84d;
+  transition:.4s;
+}
+.quiz button{
+  margin:5px;
+}
+.correct{
+  background:#2d8b42!important;
+}
+.wrong{
+  background:#c84b3b!important;
+}
+.note{
+  background:#fff7dc;
+  border-left:5px solid #e3ae21;
+  padding:15px;
+  border-radius:8px;
+  line-height:1.6;
+}
+footer{
+  background:#063b50;
+  color:white;
+  text-align:center;
+  padding:25px;
+}
+.legend{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:15px 0;
+}
+.legend span{
+  padding:7px 12px;
+  border-radius:20px;
+  font-weight:bold;
+  font-size:.85rem;
+}
+.native{
+  background:#dff5df;
+  color:#267326;
+}
+.introduced{
+  background:#ffe6d7;
+  color:#a44a16;
+}
+.predatorLegend{
+  background:#ffe2db;
+  color:#a43720;
+}
+.herbivoreLegend{
+  background:#e4f6d9;
+  color:#3b7e29;
+}
+@media(max-width:600px){
+  header h1{ font-size:2.1rem; }
+  #pond{ height:350px; }
+  .entity{ font-size:43px; }
+  .prey,.food{ font-size:30px; }
+}
+
+/* ===== MINI ECOSYSTEM SIMULATOR ===== */
+#ecosystemControls{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+#ecosystemCanvas{position:absolute;inset:0;z-index:8;pointer-events:none}
+.ecoFish{
+  position:absolute;
+  font-size:42px;
+  line-height:1;
+  pointer-events:auto;
+  cursor:pointer;
+  user-select:none;
+  transition:transform .18s linear;
+  filter:drop-shadow(0 3px 2px #0005);
+}
+.ecoFish.predator{filter:drop-shadow(0 3px 2px #0005) saturate(1.15)}
+.ecoFish.herbivore{filter:drop-shadow(0 3px 2px #0005) saturate(.9)}
+.ecoFish.omnivore{filter:drop-shadow(0 3px 2px #0005)}
+.ecoFish.hungry{animation:hungryPulse .7s infinite alternate}
+@keyframes hungryPulse{from{scale:1}to{scale:1.08}}
+.ecoTarget{
+  position:absolute;
+  z-index:7;
+  font-size:30px;
+  pointer-events:none;
+  transition:left .35s linear,top .35s linear,opacity .3s;
+}
+.attackFlash{
+  animation:attackFlash .45s ease-in-out;
+}
+@keyframes attackFlash{
+  0%{transform:scale(1)}
+  35%{transform:scale(1.5) rotate(-5deg)}
+  70%{transform:scale(.8) rotate(5deg)}
+  100%{transform:scale(1)}
+}
+.feedBurst{
+  position:absolute;
+  z-index:12;
+  pointer-events:none;
+  font-size:24px;
+  animation:burst .8s ease-out forwards;
+}
+@keyframes burst{
+  0%{opacity:1;transform:translate(0,0) scale(.7)}
+  100%{opacity:0;transform:translate(0,-45px) scale(1.25)}
+}
+.ecoInfo{
+  background:#eef9fc;
+  border-radius:12px;
+  padding:12px;
+  margin-top:12px;
+}
+.ecoLegend{
+  display:flex;gap:8px;flex-wrap:wrap;font-size:.88rem;margin-top:8px
+}
+.ecoLegend span{padding:6px 9px;border-radius:16px;background:#f1f7f9}
+</style> 
+</head> 
+<body> 
+<header>
+  <h1>🐟 Thailand Fish Explorer</h1>
+  <p> Explore Thai freshwater and introduced fish species, learn where they live, discover their diets and watch them interact inside the virtual pond! </p>
+</header> 
+
+<nav>
+  <a href="#explorer">Explorer</a>
+  <a href="#pondGame">Interactive Pond</a>
+  <a href="#quiz">Quiz</a>
+</nav> 
+
+<main> 
+  <section id="explorer" class="panel"> 
+    <h2>🔎 Fish Explorer</h2> 
+    <p> Search for a fish or filter the species by diet and status. Click a fish name to place it into the interactive pond. </p> 
+    
+    <div class="controls"> 
+      <!-- FIXED: Added missing '>' to close input tag below -->
+      <input id="search" placeholder="Search fish...">
+      
+      <select id="filter">
+        <option value="all">All fish</option>
+        <option value="herbivore">Herbivores</option>
+        <option value="omnivore">Omnivores</option>
+        <option value="carnivore">Carnivores</option>
+        <option value="predator">Predators</option>
+      </select> 
+      <select id="statusFilter">
+        <option value="all">Native + Introduced</option>
+        <option value="Native">🇹🇭 Native</option>
+        <option value="Introduced">🌎 Introduced</option>
+      </select> 
+      <button onclick="randomFish()">🎲 Random Fish</button> 
+    </div> 
+    
+    <div class="legend">
+      <span class="native">🇹🇭 Native</span>
+      <span class="introduced">🌎 Introduced</span>
+      <span class="predatorLegend">🦈 Predator</span>
+      <span class="herbivoreLegend">🌿 Herbivore</span>
+    </div> 
+    
+    <div id="detail">
+      Click a fish name to learn more and put it into the pond.
+    </div> 
+  </section> 
+
+  <div id="fishGrid" class="grid"></div> 
+
+  <section id="pondGame" class="game">
+    <h2>🎮 Living Thailand Fish Ecosystem</h2>
+    <p> Watch the fish interact on their own! Predators hunt, herbivores search for plants, and omnivores look for whatever food is available. Click any moving fish to inspect it. </p> 
+    <div id="pond">
+      <div class="plant" style="left:7%">🌿</div>
+      <div class="plant" style="left:25%">🌱</div>
+      <div class="plant" style="left:48%">🌿</div>
+      <div class="plant" style="left:83%">🌱</div> 
+      <div class="bubble" style="left:15%;bottom:15%">○</div>
+      <div class="bubble" style="left:35%;bottom:5%;animation-delay:1s">○</div>
+      <div class="bubble" style="left:60%;bottom:18%;animation-delay:2s">○</div>
+      <div class="bubble" style="left:82%;bottom:8%;animation-delay:3s">○</div> 
+      <div id="ecosystemCanvas"></div> 
+      <div id="mainFish" class="entity" style="left:15%;top:50%">🐟</div>
+      <div id="prey" class="prey" style="left:68%;top:50%;opacity:.9">🐠</div>
+      <div id="food" class="food" style="left:72%;top:65%">🥬</div>
+    </div> 
+    <div id="ecosystemControls">
+      <button onclick="startEcosystem()">▶️ Start Ecosystem</button>
+      <button onclick="pauseEcosystem()">⏸️ Pause</button>
+      <button onclick="addEcosystemFish()">➕ Add Fish</button>
+      <button onclick="feedEcosystem()">🍽️ Drop Food</button>
+      <button onclick="resetEcosystem()">🔄 Reset Ecosystem</button>
+    </div> 
+    <div class="status" id="status">Select a fish above or start the ecosystem.</div> 
+    <div class="ecoInfo">
+      <b>🌊 Ecosystem status:</b> <span id="ecoState">Paused</span> &nbsp; • &nbsp;
+      <b>🐟 Fish swimming:</b> <span id="ecoCount">0</span> &nbsp; • &nbsp;
+      <b>🦈 Hunts:</b> <span id="huntCount">0</span> &nbsp; • &nbsp;
+      <b>🍽️ Meals:</b> <span id="meals">0</span> &nbsp; • &nbsp;
+      <b>⭐ Score:</b> <span id="score">0</span>
+      <div class="ecoLegend">
+        <span>🦈 Predators chase prey</span>
+        <span>🌿 Herbivores eat plants</span>
+        <span>🍽️ Omnivores eat mixed food</span>
+        <span>🖱️ Click a fish for details</span>
+      </div>
+    </div> 
+    <p><b>Selected fish energy</b></p>
+    <div class="energyBar"><div id="energyFill"></div></div> 
+    <div class="stats">
+      <div class="stat">Fish: <strong id="statFish">—</strong></div>
+      <div class="stat">Diet: <strong id="statDiet">—</strong></div>
+      <div class="stat">Status: <strong id="statStatus">—</strong></div>
+    </div>
+  </section> 
+
+  <section id="quiz" class="panel quiz"> 
+    <h2>🧠 Thailand Fish Quiz</h2> 
+    <p id="question"> Which group mainly eats plants? </p> 
+    <div id="answers"></div> 
+    <p id="quizResult"></p> 
+    <button onclick="newQuestion()">➡️ New Question</button> 
+  </section> 
+
+  <section class="note"> 
+    <strong>Educational note:</strong> The fish list and Native/Introduced classifications in this version are based on the supplied Dreamlake Thailand fish species resource. The source describes native species and introduced fish stocked in man-made fishing lakes in Thailand. Some diet and habitat descriptions in this interactive game are simplified for educational/gameplay purposes. 
+  </section> 
+</main> 
+
+<footer> Thailand Fish Explorer • Interactive educational website 🐟 </footer> 
+
+<script>
+/* =========================================================
+   FISH DATABASE
+========================================================= */
+const fishData=[
+  { name:"Chao Phraya Catfish", scientific:"Pangasius sanitwongsei", diet:"Carnivore", type:"predator", status:"Native", habitat:"Chao Phraya River and Mekong basin", location:"Large freshwater rivers", food:"🐠", emoji:"🐟", info:"A large native freshwater catfish associated with major river systems." },
+  { name:"Giant Mekong Catfish", scientific:"Pangasianodon gigas", diet:"Herbivore", type:"herbivore", status:"Native", habitat:"Mekong River basin", location:"Large freshwater rivers", food:"🌿", emoji:"🐟", info:"One of the world's largest freshwater fish and a critically endangered Mekong species." },
+  { name:"Gunter's Walking Catfish", scientific:"Clarias macrocephalus", diet:"Omnivore", type:"omnivore", status:"Native", habitat:"Ponds, swamps, rice fields and slow water", location:"Freshwater wetlands", food:"🦐", emoji:"🐟", info:"A native walking catfish that can feed on a variety of available food." },
+  { name:"Striped Catfish", scientific:"Pangasianodon hypophthalmus", diet:"Omnivore", type:"omnivore", status:"Native", habitat:"Rivers, ponds and reservoirs", location:"Freshwater systems", food:"🍽️", emoji:"🐟", info:"A commonly encountered catfish in Thailand and a popular stocked fish." },
+  { name:"Tiger Shovelnose Catfish", scientific:"Sorubim lima", diet:"Predator", type:"predator", status:"Introduced", habitat:"Artificial fishing lakes", location:"Stocked freshwater lakes", food:"🐠", emoji:"🐟", info:"An Amazonian predatory catfish introduced to some Thai fishing lakes." },
+  { name:"Redtail Catfish", scientific:"Phractocephalus hemioliopterus", diet:"Predator", type:"predator", status:"Introduced", habitat:"Artificial fishing lakes", location:"Stocked freshwater lakes", food:"🐠", emoji:"🐟", info:"An Amazon basin catfish introduced to man-made fishing lakes." },
+  { name:"Common Carp", scientific:"Cyprinus carpio", diet:"Omnivore", type:"omnivore", status:"Native", habitat:"Lakes, ponds, rivers and reservoirs", location:"Freshwater", food:"🥬", emoji:"🐟", info:"Feeds on a mixture of plant material and small aquatic animals." },
+  { name:"Giant Siamese Carp", scientific:"Catlocarpio siamensis", diet:"Herbivore", type:"herbivore", status:"Native", habitat:"Large freshwater rivers and floodplains", location:"Southeast Asian freshwater", food:"🌿", emoji:"🐟", info:"A huge native carp and one of the largest carp species in the world." },
+  { name:"Silver Java Barb", scientific:"Barbonymus gonionotus", diet:"Herbivore", type:"herbivore", status:"Native", habitat:"Rivers, canals, ponds and reservoirs", location:"Freshwater", food:"🥬", emoji:"🐟", info:"A popular Thai food fish that commonly feeds on plant material." },
+  { name:"Jullien's Golden Price Carp", scientific:"Probarbus jullieni", diet:"Omnivore", type:"omnivore", status:"Native", habitat:"Large rivers", location:"Mekong and Southeast Asian river systems", food:"🌿", emoji:"🐟", info:"A rare native carp affected by habitat loss and overfishing." },
+  { name:"Jungle Perch", scientific:"Hampala macrolepidota", diet:"Predator", type:"predator", status:"Native", habitat:"Rivers, reservoirs and flowing freshwater", location:"Thai rivers and reservoirs", food:"🐠", emoji:"🐟", info:"A fast predatory barb that hunts smaller aquatic animals." },
+  { name:"Small Scale Mud Carp", scientific:"Cirrhina microlepis", diet:"Herbivore", type:"herbivore", status:"Native", habitat:"Rivers and freshwater habitats", location:"Southeast Asian freshwater", food:"🌿", emoji:"🐟", info:"A vegetarian carp species native to Thailand." },
+  { name:"Rohu Indian Carp", scientific:"Labeo rohita", diet:"Herbivore", type:"herbivore", status:"Introduced", habitat:"Ponds, reservoirs and stocked fishing lakes", location:"Introduced freshwater environments", food:"🥬", emoji:"🐟", info:"A vegetarian Indian carp introduced into Thailand." },
+  { name:"Giant Snakehead", scientific:"Channa micropeltes", diet:"Predator", type:"predator", status:"Native", habitat:"Rivers, lakes, swamps and floodplains", location:"Thai freshwater", food:"🐠", emoji:"🐍", info:"A powerful native predator known for aggressive hunting behavior." },
+  { name:"Striped Snakehead", scientific:"Channa striata", diet:"Predator", type:"predator", status:"Native", habitat:"Ponds, rivers, swamps and small water bodies", location:"Freshwater wetlands", food:"🐠", emoji:"🐍", info:"A widespread snakehead capable of living in many types of freshwater habitat." },
+  { name:"Barramundi", scientific:"Lates calcarifer", diet:"Predator", type:"predator", status:"Native", habitat:"Coastal waters, estuaries, rivers and brackish water", location:"Tropical Southeast Asia", food:"🐠", emoji:"🐟", info:"A predatory Asian sea bass that can move between freshwater and coastal environments." },
+  { name:"Freshwater Stingray", scientific:"Himantura chaophraya", diet:"Carnivore", type:"carnivore", status:"Native", habitat:"Deep freshwater rivers", location:"Chao Phraya and Mae Klong systems", food:"🦐", emoji:"🟤", info:"A large bottom-dwelling freshwater ray found in major Thai river systems." },
+  { name:"Giant Gourami", scientific:"Osphronemus goramy", diet:"Herbivore", type:"herbivore", status:"Native", habitat:"Slow freshwater, ponds, wetlands and rivers", location:"Freshwater", food:"🌿", emoji:"🐟", info:"A large gourami that feeds heavily on plant material." },
+  { name:"Spotted Featherback", scientific:"Chitala ornata", diet:"Predator", type:"predator", status:"Native", habitat:"Rivers, lakes and slow freshwater", location:"Southeast Asian freshwater", food:"🐠", emoji:"🐟", info:"A striking native predator that hunts smaller fish and aquatic animals." },
+  { name:"White Sheatfish", scientific:"Wallago attu", diet:"Predator", type:"predator", status:"Native", habitat:"Large rivers, dams and deep freshwater", location:"Thai freshwater", food:"🐠", emoji:"🐟", info:"A very large predatory catfish that is rare in the wild." },
+  { name:"Alligator Gar", scientific:"Atractosteus spatula", diet:"Predator", type:"predator", status:"Introduced", habitat:"Artificial fishing lakes", location:"Stocked fishing parks", food:"🐠", emoji:"🐊", info:"A large North American predator introduced into some Thai fishing lakes." },
+  { name:"Arapaima", scientific:"Arapaima gigas", diet:"Predator", type:"predator", status:"Introduced", habitat:"Artificial fishing lakes", location:"Stocked fishing parks", food:"🐠", emoji:"🐟", info:"A giant Amazonian predator stocked in some Thai fishing resorts." },
+  { name:"Nile Tilapia", scientific:"Oreochromis niloticus", diet:"Omnivore", type:"omnivore", status:"Introduced", habitat:"Lakes, ponds, reservoirs and farms", location:"Freshwater", food:"🥬", emoji:"🐟", info:"A widely encountered introduced food fish that can eat plant and animal material." },
+  { name:"Peacock Bass", scientific:"Cichla spp.", diet:"Predator", type:"predator", status:"Introduced", habitat:"Artificial fishing lakes", location:"Stocked freshwater lakes", food:"🐠", emoji:"🐟", info:"A tropical South American predator stocked into some Thai fishing lakes." },
+  { name:"Pacu", scientific:"Piaractus brachypomus", diet:"Omnivore", type:"omnivore", status:"Introduced", habitat:"Artificial fishing lakes and ponds", location:"Stocked freshwater", food:"🥬", emoji:"🐟", info:"An Amazonian fish introduced to Thai fishing parks; it can eat plant and animal material." },
+  { name:"Tambaqui", scientific:"Colossoma macropomum", diet:"Omnivore", type:"omnivore", status:"Introduced", habitat:"Artificial fishing lakes", location:"Stocked freshwater", food:"🍎", emoji:"🐟", info:"A South American fish introduced into some Thai fishing lakes." }
+];
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+const grid=document.getElementById("fishGrid");
+const search=document.getElementById("search");
+const filter=document.getElementById("filter");
+const statusFilter=document.getElementById("statusFilter");
+
+let selected=null;
+let totalMeals=0;
+let score=0;
+let energy=100;
+
+/* =========================================================
+   RENDER FISH
+========================================================= */
+function render(){
+  const q=search.value.toLowerCase();
+  const f=filter.value;
+  const sf=statusFilter.value;
+  grid.innerHTML="";
+  
+  fishData
+  .filter(x=> 
+    x.name.toLowerCase().includes(q) && 
+    (f==="all" || x.type===f || (f==="carnivore" && x.type==="predator")) && 
+    (sf==="all" || x.status===sf)
+  )
+  .forEach(x=>{
+    const c=document.createElement("article");
+    c.className="card "+x.type;
+    c.innerHTML=`
+      <span class="tag">${x.diet}</span>
+      <span class="tag ${ x.status==="Native" ?"statusNative" :"statusIntroduced" }">
+        ${x.status==="Native"?"🇹🇭 Native":"🌎 Introduced"}
+      </span>
+      <h3>${x.emoji} ${x.name}</h3>
+      <p><b>Scientific name:</b> <i>${x.scientific}</i></p>
+      <p><b>🌍 Where it lives:</b> ${x.habitat}</p>
+      <p><b>📍 Environment:</b> ${x.location}</p>
+      <p>${x.info}</p>
+    `;
+    c.querySelector("h3").onclick=()=>selectFish(x,c);
+    grid.appendChild(c);
+  });
+}
+
+/* =========================================================
+   SELECT FISH
+========================================================= */
+function selectFish(x,card){
+  selected=x;
+  document.querySelectorAll(".card").forEach(c=>c.classList.remove("selected"));
+  if(card) card.classList.add("selected");
+
+  document.getElementById("detail").innerHTML=`
+    <h3>${x.emoji} ${x.name}</h3>
+    <p><b>Scientific name:</b> <i>${x.scientific}</i></p>
+    <p><b>Diet:</b> ${x.diet}</p>
+    <p><b>Thailand status:</b> ${ x.status==="Native" ?"🇹🇭 Native to Thailand" :"🌎 Introduced to Thailand" }</p>
+    <p><b>🌍 Where it lives:</b> ${x.habitat}</p>
+    <p><b>📍 Environment:</b> ${x.location}</p>
+    <p>${x.info}</p>
+  `;
+
+  document.getElementById("statFish").textContent=x.name;
+  document.getElementById("statDiet").textContent=x.diet;
+  document.getElementById("statStatus").textContent= x.status==="Native"?"🇹🇭 Native":"🌎 Introduced";
+
+  const fish=document.getElementById("mainFish");
+  fish.textContent=x.emoji;
+  fish.style.left="15%";
+  fish.style.top="50%";
+  fish.style.transform="";
+
+  const food=document.getElementById("food");
+  food.style.opacity="1";
+  food.textContent= x.type==="herbivore" ? "🥬" : x.type==="predator" ? "🐠" : "🍽️";
+
+  resetEnergy();
+
+  if(x.type==="herbivore"){
+    document.getElementById("status").textContent= x.name+" is looking for plants! 🌿";
+  }else if(x.type==="predator"){
+    document.getElementById("status").textContent= x.name+" is ready to hunt! 🦈";
+  }else{
+    document.getElementById("status").textContent= x.name+" is ready to feed! 🍽️";
+  }
+
+  document.getElementById("pondGame").scrollIntoView({ behavior:"smooth", block:"center" });
+}
+
+/* =========================================================
+   FEED FISH & GAME LOGIC
+========================================================= */
+function finishMeal(message){
+  totalMeals++;
+  score+=10;
+  energy=Math.min(100,energy+20);
+  document.getElementById("meals").textContent= totalMeals;
+  document.getElementById("score").textContent= score;
+  updateEnergy();
+  document.getElementById("status").textContent= message+ " +10 points ⭐";
+}
+
+function updateEnergy(){
+  const bar=document.getElementById("energyFill");
+  bar.style.width=energy+"%";
+  if(energy>60){
+    bar.style.background="#46a84d";
+  }else if(energy>30){
+    bar.style.background="#e0a92f";
+  }else{
+    bar.style.background="#c84b3b";
+  }
+}
+
+function resetEnergy(){
+  energy=100;
+  updateEnergy();
+}
+
+function randomFish(){
+  const x= fishData[ Math.floor(Math.random()*fishData.length) ];
+  search.value=x.name;
+  filter.value="all";
+  statusFilter.value="all";
+  render();
+  const card= [...document.querySelectorAll(".card")][0];
+  if(card){ selectFish(x,card); }
+}
+
+/* =========================================================
+   QUIZ
+========================================================= */
+const questions=[
+  { q:"Which group mainly eats plants?", answers:["Carnivores","Herbivores","Predators"], correct:1 },
+  { q:"Which fish is native to Thailand?", answers:["Arapaima","Giant Snakehead","Alligator Gar"], correct:1 },
+  { q:"Which fish is introduced?", answers:["Giant Mekong Catfish","Giant Snakehead","Nile Tilapia"], correct:2 },
+  { q:"Which fish is a powerful predator?", answers:["Giant Snakehead","Giant Gourami","Giant Siamese Carp"], correct:0 },
+  { q:"Where is the Giant Mekong Catfish naturally associated with?", answers:["Mekong River basin","Amazon basin","North American rivers"], correct:0 },
+  { q:"Which fish is from South America and introduced into some Thai fishing lakes?", answers:["Tambaqui","Jungle Perch","Striped Snakehead"], correct:0 },
+  { q:"What does a predator do in this game?", answers:[ "Chases prey", "Only eats plants", "Never moves" ], correct:0 }
+];
+
+let currentQuestion=0;
+function loadQuestion(){
+  const q=questions[currentQuestion];
+  document.getElementById("question").textContent=q.q;
+  const answers=document.getElementById("answers");
+  answers.innerHTML="";
+  q.answers.forEach((answer,index)=>{
+    const button=document.createElement("button");
+    button.textContent=answer;
+    button.onclick=()=>{
+      if(index===q.correct){
+        button.classList.add("correct");
+        document.getElementById("quizResult").textContent= "Correct! 🎉 +5 points";
+        score+=5;
+      }else{
+        button.classList.add("wrong");
+        document.getElementById("quizResult").textContent= "Not quite! Try the next question. 🐟";
+      }
+      document.getElementById("score").textContent=score;
+    };
+    answers.appendChild(button);
+  });
+}
+
+function newQuestion(){
+  currentQuestion= (currentQuestion+1)%questions.length;
+  document.getElementById("quizResult").textContent="";
+  loadQuestion();
+}
+
+/* =========================================================
+   SEARCH & FILTER LISTENERS
+========================================================= */
+search.addEventListener("input",render);
+filter.addEventListener("change",render);
+statusFilter.addEventListener("change",render);
+
+render();
+loadQuestion();
+updateEnergy();
+</script> 
+
+<script>
+/* =========================================================
+   LIVING ECOSYSTEM UPGRADE
+========================================================= */
+let startEcosystem, pauseEcosystem, addEcosystemFish, feedEcosystem, resetEcosystem;
+
+(function(){
+  const canvas = document.getElementById("ecosystemCanvas");
+  const ecoState = document.getElementById("ecoState");
+  const ecoCount = document.getElementById("ecoCount");
+  const huntCountEl = document.getElementById("huntCount");
+  const statusEl = document.getElementById("status");
+  const scoreEl = document.getElementById("score");
+  const mealsEl = document.getElementById("meals");
+
+  let ecoFish = [];
+  let ecoTimer = null;
+  let huntCount = 0;
+  let ecoMeals = 0;
+  let ecoScore = 0;
+  let uid = 0;
+
+  const speciesPool = [
+    {name:"Giant Snakehead",type:"predator",diet:"Predator",emoji:"🐍"},
+    {name:"Striped Snakehead",type:"predator",diet:"Predator",emoji:"🐍"},
+    {name:"Jungle Perch",type:"predator",diet:"Predator",emoji:"🐟"},
+    {name:"Spotted Featherback",type:"predator",diet:"Predator",emoji:"🐟"},
+    {name:"Giant Siamese Carp",type:"herbivore",diet:"Herbivore",emoji:"🐟"},
+    {name:"Giant Gourami",type:"herbivore",diet:"Herbivore",emoji:"🐟"},
+    {name:"Giant Mekong Catfish",type:"herbivore",diet:"Herbivore",emoji:"🐟"},
+    {name:"Silver Java Barb",type:"herbivore",diet:"Herbivore",emoji:"🐟"},
+    {name:"Nile Tilapia",type:"omnivore",diet:"Omnivore",emoji:"🐟"},
+    {name:"Common Carp",type:"omnivore",diet:"Omnivore",emoji:"🐟"},
+    {name:"Walking Catfish",type:"omnivore",diet:"Omnivore",emoji:"🐟"},
+    {name:"Pacu",type:"omnivore",diet:"Omnivore",emoji:"🐟"}
+  ];
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+
+  function makeFish(data){
+    const el=document.createElement("div");
+    el.className="ecoFish "+data.type;
+    el.textContent=data.emoji;
+    el.title=data.name+" — click for details";
+    canvas.appendChild(el);
+
+    const f={
+      id:++uid,
+      ...data,
+      el,
+      x:rand(8,90),
+      y:rand(35,82),
+      vx:rand(-.22,.22),
+      vy:rand(-.12,.12),
+      energy:rand(65,100),
+      eaten:false
+    };
+
+    el.addEventListener("click",()=>{
+      const real=fishData.find(x=>x.name===f.name);
+      if(real){
+        const cards=[...document.querySelectorAll(".card")];
+        const card=cards.find(c=>c.querySelector("h3")?.textContent.includes(f.name));
+        selectFish(real,card);
+      }
+      statusEl.textContent= f.name+" is swimming. "+ (f.type==="predator"?"🦈 It hunts smaller fish.": f.type==="herbivore"?"🌿 It searches for plants.": "🍽️ It eats mixed food.");
+      scoreEl.textContent=++ecoScore;
+    });
+
+    ecoFish.push(f);
+    updateCount();
+    drawFish(f);
+    return f;
+  }
+
+  function drawFish(f){
+    f.el.style.left=f.x+"%";
+    f.el.style.top=f.y+"%";
+    f.el.style.transform=f.vx<0 ? "scaleX(-1)" : "scaleX(1)";
+  }
+
+  function updateCount(){
+    ecoCount.textContent=ecoFish.length;
+    huntCountEl.textContent=huntCount;
+    mealsEl.textContent=ecoMeals;
+    scoreEl.textContent=ecoScore;
+  }
+
+  function tick(){
+    ecoFish.forEach(f=>{
+      f.x += f.vx;
+      f.y += f.vy;
+      if(f.x < 5 || f.x > 90) f.vx *= -1;
+      if(f.y < 35 || f.y > 80) f.vy *= -1;
+      drawFish(f);
+    });
+  }
+
+  startEcosystem = function(){
+    if(ecoTimer) return;
+    if(ecoFish.length===0){
+      for(let i=0;i<4;i++){
+        makeFish(speciesPool[Math.floor(Math.random()*speciesPool.length)]);
+      }
+    }
+    ecoTimer = setInterval(tick, 100);
+    ecoState.textContent="Active";
+  };
+
+  pauseEcosystem = function(){
+    clearInterval(ecoTimer);
+    ecoTimer = null;
+    ecoState.textContent="Paused";
+  };
+
+  addEcosystemFish = function(){
+    makeFish(speciesPool[Math.floor(Math.random()*speciesPool.length)]);
+  };
+
+  feedEcosystem = function(){
+    ecoMeals++;
+    ecoScore+=5;
+    updateCount();
+    statusEl.textContent="Food dropped into the pond! 🍽️";
+  };
+
+  resetEcosystem = function(){
+    pauseEcosystem();
+    ecoFish.forEach(f=>f.el.remove());
+    ecoFish=[];
+    huntCount=0;
+    ecoMeals=0;
+    updateCount();
+    statusEl.textContent="Ecosystem reset.";
+  };
+})();
+</script>
+</body>
+</html>
